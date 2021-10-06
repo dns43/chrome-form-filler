@@ -14,22 +14,18 @@ const fakeData1 = {
   sex: 'true'
 };
 
-//let bgpage = chrome.extension.getBackgroundPage();
-//bgpage.asd();
-
-const boxes = ["Saab", "Volvo", "BMW"];
+const boxes = ["VW", "Toyota", "Beamer"];
 
 function bg() {
   try {
-    const arrayData = chrome.runtime.sendMessage({ type: 'get_array' });
+    const arrayData = chrome.runtime.sendMessage({ type: 'get' });
+    console.log(arrayData)
     return 'asd' //arrayData
   } catch (error) {
     console.error("sendMessageToBackground error: ", error);
     return null;
   }
 }
-
-
 const Popup = () => {
 
   const test = bg();
@@ -90,17 +86,16 @@ const Popup = () => {
         <img src={logo} className="App-logo" alt="logo" />
 
         {boxes ? boxes.map(box => (
-          <div>
-            <input type="checkbox" id="scales" name="scales"
-              checked></input>
-            <label for="scales">{box}</label>
+          <div key={box + 'div'}>
+            <input type="checkbox" id={box} name={box} key={box + 'box'}></input>
+            <label htmlFor={box} key={box + 'lbl'}>{box}</label>
           </div>
         )) : (
-          <button onClick={hello}>Say Hi!</button>
+          <button onClick={hello} key='hi'>Say Hi!</button>
         )
         }
-        <button onClick={headers}>Get headers</button>
-      </header>
+        <button onClick={headers} key='headers'>Get headers</button>
+      </header >
     </div >
   );
 };
