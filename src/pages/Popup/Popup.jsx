@@ -23,20 +23,26 @@ const fakeData1 = {
 
 var boxes = ["VW", "Toyota", "Beamer"];
 
-chrome.storage.sync.get(['key'], function (result) {
-  popuplog('Value currently is ' + result.key);
-  boxes = result.key;
-  popuplog('Boxes currently is ' + result.key);
+chrome.storage.sync.set({ key: boxes }, function () {
+  popuplog('Value is set to ' + boxes);
 });
 
+//chrome.storage.sync.get(['key'], function (result) {
+//  popuplog('Value currently is ' + result.key);
+//  boxes = result.key;
+//  popuplog('Boxes currently is ' + result.key);
+//});
+
 chrome.storage.onChanged.addListener(function (changes, namespace) {
+  var u = ['asd']
   for (let [key, { oldValue, newValue }] of Object.entries(changes)) {
     console.log(
       `GLOBAL Storage key "${key}" in namespace "${namespace}" changed.`,
       `GLOBAL Old value was "${oldValue}", new value is "${newValue}".`
     );
+    u.push(newValue)
   }
-  //update()
+  update(u)
 });
 
 function send2background(s, d) {
@@ -65,7 +71,8 @@ function send2content(s, d) {
 }
 
 
-function update() {
+function update(vals) {
+  popuplog(vals)
   const element =
     <div className="App">
       <header className="App-header">
@@ -77,7 +84,7 @@ function update() {
         </div>
 
         <button onClick={update} key='update'>Update</button>
-        <button onClick={() => send2content('headers', fakeData)} key='headers'>Get headers</button>
+        <button onClick={() => send2content('headers')} key='headers'>Get headers</button>
       </header >
     </div >
   ReactDOM.render(element, document.getElementById('app-container'));
@@ -86,36 +93,25 @@ function update() {
 
 const Popup = () => {
 
-  const test = 'asd'//send2background('get');
+  //const [fakeData, setFakeData] = useState();
 
-  popuplog('got test data from bg: ' + test)
-
-  const [fakeData, setFakeData] = useState()
-
-  useEffect(() => {
-    setFakeData(fakeData1)
-  }, []);
+  //useEffect(() => {
+  //  setFakeData(fakeData1)
+  //}, []);
 
 
-  chrome.storage.onChanged.addListener(function (changes, namespace) {
-    let key = Object.entries(changes)
-    console.log(
-      `LOCAL  Storage key "${key}" in namespace "${namespace}" changed.`
-    );
-  });
+  //chrome.storage.onChanged.addListener(function (changes, namespace) {
+  //  let key = Object.entries(changes)
+  //  console.log(
+  //    `LOCAL  Storage key "${key}" in namespace "${namespace}" changed.`
+  //  );
+  //  update()//
+  //});
 
   function hello() {
     const element =
       <h1>Hello, world!</h1>
     ReactDOM.render(element, document.getElementById('app-container'));
-  }
-
-
-  function getLabels() {
-    chrome.tabs.query({ active: true, currentWindow: true }, tabs => {
-      chrome.tabs.sendMessage(tabs[0].id, { type: "getlabels", fakeData }, function (response) {
-      });
-    });
   }
 
   return (
@@ -133,7 +129,7 @@ const Popup = () => {
         )
         }
         <button onClick={update} key='update'>Update</button>
-        <button onClick={() => send2content('headers', fakeData)} key='headers'>Get headers</button>
+        <button onClick={() => send2content('headers')} key='headers'>Get headers</button>
       </header >
     </div >
   );

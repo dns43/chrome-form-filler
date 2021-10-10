@@ -1,22 +1,20 @@
 import { printLine } from './modules/print';
 
-console.log('[content]: Content script works!');
-console.log('[content]: Must reload extension for modifications to take effect.');
-
 function contentlog(s) {
   console.log('[content]: ' + s)
 }
+
+contentlog('Content script works!');
+contentlog('Must reload extension for modifications to take effect.');
 
 printLine("Using the 'printLine' function from the Print Module");
 
 var words = ["yyy", "xxx", "zzz"];
 
-function forward(findings) {
+function store(findings) {
   chrome.storage.sync.set({ key: words }, function () {
     console.log('Value is set to ' + words);
   });
-  const arrayData = chrome.runtime.sendMessage({ type: 'set', findings });
-
 }
 
 function fillForm(fakeData) {
@@ -28,10 +26,8 @@ function fillForm(fakeData) {
   });
 }
 
-function get_all_h1() {
-
-  var headings = 'asd';
-  const qwe = document.getElementsByTagName('h1');
+function get_all(tag) {
+  const qwe = document.getElementsByTagName(tag);
   const eins = qwe[0].textContent
   return eins
 }
@@ -56,16 +52,14 @@ function extract_inputs() {
 chrome.runtime.onMessage.addListener(function (message, sender, sendResponse) {
   switch (message.type) {
     case 'fillform':
-      fillForm(message.fakeData);
+      contentlog('fillform')
+      //fillForm(message.fakeData);
       break;
     case 'headers':
-      chrome.storage.sync.set({ key: words }, function () {
-        console.log('Value is set to ' + words);
-      });
-      const labels = 'res'//get_all_h1();
-      //forward(labels);
-      sendResponse(labels);
-      //return
+      sendResponse('dummy');
+      const h1s = get_all('h1');
+      store(h1s)
+      return true
       break;
     default:
       console.error('unknown api')
