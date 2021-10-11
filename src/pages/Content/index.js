@@ -12,8 +12,8 @@ printLine("Using the 'printLine' function from the Print Module");
 var words = ["yyy", "xxx", "zzz"];
 
 function store(findings) {
-  chrome.storage.sync.set({ key: words }, function () {
-    console.log('Value is set to ' + words);
+  chrome.storage.sync.set({ key: findings }, function () {
+    contentlog('Storing ' + findings);
   });
 }
 
@@ -26,10 +26,28 @@ function fillForm(fakeData) {
   });
 }
 
-function get_all(tag) {
+function get_first(tag) {
+  contentlog('Getting all ' + tag);
   const qwe = document.getElementsByTagName(tag);
   const eins = qwe[0].textContent
+  contentlog('Found ' + eins);
   return eins
+}
+
+function get_pii_lbls() {
+  let tag = 'input';
+  contentlog('Getting all PII labels');
+  const elts = document.getElementsByTagName(tag);
+  var pii_lbls = []
+  for (var e of elts) {
+    for (var attr of e.attributes) {
+      if (attr.name.includes("label") || attr.name.includes("placeholder")) {
+        pii_lbls.push(attr.value)
+      }
+    }
+  }
+  contentlog('Found ' + pii_lbls);
+  return pii_lbls
 }
 
 function extract_inputs() {
@@ -57,8 +75,10 @@ chrome.runtime.onMessage.addListener(function (message, sender, sendResponse) {
       break;
     case 'headers':
       sendResponse('dummy');
-      const h1s = get_all('h1');
-      store(h1s)
+      //const h1s = get_first('h1');
+      const pii_lbls = get_pii_lbls()
+      contentlog('Listener got ' + pii_lbls + ' sending to storage now')
+      store(pii_lbls)
       return true
       break;
     default:
