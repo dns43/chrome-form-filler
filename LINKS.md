@@ -1,0 +1,12 @@
+https://pythonbasics.org/flask-rest-api/
+https://www.mongodb.com/compatibility/docker
+https://www.mongodb.com/what-are-microservices
+https://flask.palletsprojects.com/en/2.0.x/tutorial/deploy/
+http://docs.mongoengine.org/projects/flask-mongoengine/en/latest/
+https://stackoverflow.com/questions/13279399/how-to-obtain-values-of-request-variables-using-python-and-flask
+https://www.javascripttutorial.net/javascript-fetch-api/
+https://dmitripavlutin.com/fetch-with-json/
+https://stackoverflow.com/questions/53511974/javascript-fetch-failed-to-execute-json-on-response-body-stream-is-locked
+https://www.digitalocean.com/community/tutorials/processing-incoming-request-data-in-flask
+https://github.blog/2016-02-01-working-with-submodules/
+https://stackoverflow.com/questions/4535333/how-can-i-use-mongodb-to-find-all-documents-which-have-a-field-regardless-of-th

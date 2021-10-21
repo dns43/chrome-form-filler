@@ -11,6 +11,8 @@ function popuplog(s) {
   console.log('[popup]: ' + s)
 }
 
+
+
 popuplog('This is the popup page.')
 
 const fakeData1 = {
@@ -21,11 +23,17 @@ const fakeData1 = {
   sex: 'true'
 };
 
-var boxes = ["VW", "Toyota", "Beamer"];
+var boxes = [];
 
 chrome.storage.sync.set({ key: boxes }, function () {
   popuplog('Value is set to ' + boxes);
 });
+
+function store(findings) {
+  chrome.storage.sync.set({ pii: findings }, function () {
+    contentlog('Storing ' + findings);
+  });
+}
 
 //chrome.storage.sync.get(['key'], function (result) {
 //  popuplog('Value currently is ' + result.key);
@@ -36,20 +44,22 @@ chrome.storage.sync.set({ key: boxes }, function () {
 chrome.storage.onChanged.addListener(function (changes, namespace) {
   var u = []
   for (let [key, { oldValue, newValue }] of Object.entries(changes)) {
-    console.log(
-      `Global Storage.onChange listener: Storage key "${key}" in namespace "${namespace}" changed.`,
-      `Global Storage.onChange listener: Old value was "${oldValue}", new value is "${newValue}".`
-    );
-    if (Array.isArray(newValue)) {
-      for (var i of newValue) {
-        u.push(i)
+    if (key == 'key') {
+      console.log(
+        `Global Storage.onChange listener: Storage key "${key}" in namespace "${namespace}" changed.`,
+        `Global Storage.onChange listener: Old value was "${oldValue}", new value is "${newValue}".`
+      );
+      if (Array.isArray(newValue)) {
+        for (var i of newValue) {
+          u.push(i)
+        }
       }
-    }
-    else {
-      u.push(newValue)
+      else {
+        u.push(newValue)
+      }
+      update(u)
     }
   }
-  update(u)
 });
 
 function send2background(s, d) {
@@ -77,18 +87,80 @@ function send2content(s, d) {
   }
 }
 
+async function db_json_req(pii) {
+  //const testobject = { language: 'Joker' };
+  popuplog(JSON.stringify(testobject))
+  let debug = false
+  if (debug) {
+    var url = 'http://blue1.cs.columbia.edu:5000/json'
+    var testobject = { language: 'Joker' };
+  }
+  else {
+    var url = 'http://blue1.cs.columbia.edu:5000/pii'
+    var testobject = pii;
+  }
+  const response = await fetch(url, {
+    method: 'POST',
+    body: JSON.stringify(testobject), // make pii
+    headers: {
+      'Content-Type': 'application/json'
+    }
+  });
+
+  var r;
+
+  if (response.status == 200) {
+    try {
+      popuplog('Parsing server response to JSON')
+      const clone = response.clone()
+      const names = await clone.json();
+      popuplog("JSON:")
+      popuplog(JSON.stringify(names, null, 2));
+      popuplog('return')
+      r = names
+    } catch (err) {
+      popuplog('JSON malformatted, error: ' + err + '; interpreting as TEXT instead')
+      const names = await response.text()
+      popuplog("TEXT:" + names)
+      popuplog("TEXT:" + JSON.stringify(names))
+    }
+  } else {
+    popuplog('request status' + response.status)
+  }
+
+  popuplog('render')
+  render_pii_response(r)
+  store(r)
+}
+
 function db_request(pii) {
   popuplog('Requesting ' + pii + 'from DB')
+  let response = fetch('http://blue1.cs.columbia.edu:5000/display')
+    .then(response => response.text())
+    .then(data => console.log(data));
+  popuplog('DB responded: ' + response)
   var test = {};
   for (let i of pii) {
-    test[i] = 'mongodb'
+    if (i.includes('First')) {
+      test[i] = 'John'
+    }
+    if (i.includes('Last')) {
+      test[i] = 'Doe'
+    }
+    if (i.includes('mail')) {
+      test[i] = 'foo@bar.cc'
+    }
+    if (i.includes('word')) {
+      test[i] = 'test123'
+    }
   }
   return test;
 }
 
 function requestDecoy() {
   const pii_rqst = getCheckedBoxes()
-  const decoy = db_request(pii_rqst)
+  const decoy = db_json_req(pii_rqst)
+  popuplog('lets render server resp')
   render_pii_response(decoy)
 }
 
@@ -136,9 +208,9 @@ function render_pii_response(vals) {
             <input type="text" id={val} name={val} key={val + 'box'} value={vals[val]}></input>
           </div>
         ))}
-        <button onClick={update} key='update'>Update</button>
-        <button onClick={() => send2content('headers')} key='headers'>Get headers</button>
+        <button onClick={() => send2content('headers')} key='headers'>Extract Labels</button>
         <button onClick={requestDecoy} key='requestDecoy'>Request Decoy</button>
+        <button onClick={() => send2content('fillForm')} key='fillForm'>Stuff it!</button>
       </header >
     </div >
   ReactDOM.render(element, document.getElementById('app-container'));
@@ -157,9 +229,9 @@ function update(vals) {
             <label htmlFor={val} key={val + 'lbl'}>{val}</label>
           </div>
         ))}
-        <button onClick={update} key='update'>Update</button>
-        <button onClick={() => send2content('headers')} key='headers'>Get headers</button>
+        <button onClick={() => send2content('headers')} key='headers'>Extract Labels</button>
         <button onClick={requestDecoy} key='requestDecoy'>Request Decoy</button>
+        <button onClick={() => send2content('fillForm')} key='fillForm'>Stuff it!</button>
       </header >
     </div >
   ReactDOM.render(element, document.getElementById('app-container'));
@@ -203,9 +275,9 @@ const Popup = () => {
           <button onClick={hello} key='hello'>Say Hi!</button>
         )
         }
-        <button onClick={update} key='update'>Update</button>
-        <button onClick={() => send2content('headers')} key='headers'>Get headers</button>
+        <button onClick={() => send2content('headers')} key='headers'>Extract Labels</button>
         <button onClick={requestDecoy} key='requestDecoy'>Request Decoy</button>
+        <button onClick={() => send2content('fillForm')} key='fillForm'>Stuff it!</button>
       </header >
     </div >
   );
