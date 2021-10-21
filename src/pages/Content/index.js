@@ -18,17 +18,22 @@ function store(findings) {
   });
 }
 
-function load(findings) {
+function load_data_and_fill_form() {
+  // TODO PERSISTENT STORAGE
+  // Research API that persists data throughout opening/closing tabs, and even restarting chrome
+  // Load Data from unique  key (e.g. use doument.URL instead of 'pii')
+  // must also change how data is STORED in popup.jsx 
   var pii = {}
-  contentlog('load ' + findings)
   chrome.storage.sync.get(['pii'], function (result) {
     contentlog('Loading: ' + JSON.stringify(result));
     pii = result['pii']
-    fillForm(pii)
+    enter(pii)
   });
 }
 
-function fillForm(fakeData) {
+function enter(fakeData) {
+  // TODO REVERSE KEYLOGGER
+  // implement an alternative option that enters data one key stroke at a time
   contentlog("Filling data: " + JSON.stringify(fakeData, null, 2))
   contentlog('Memorized lbls: ' + pii_lbls)
 
@@ -45,19 +50,16 @@ function fillForm(fakeData) {
         });
       }
     }
-
   }
 }
 
-function get_first(tag) {
-  contentlog('Getting all ' + tag);
-  const qwe = document.getElementsByTagName(tag);
-  const eins = qwe[0].textContent
-  contentlog('Found ' + eins);
-  return eins
-}
-
 function labelscanner(elt) {
+  // TODO LABEL RECOGNITION ENGINE:
+  // So far this function supports 2 types of HTML input field labels,
+  // 1. It finds the DT that corresponds to a DD tag  (probably  can be done without assuming siblibling relationship?)
+  // 2. It finds lable and placeholder in the attribute list
+  // We can extend this.
+  // E.g. find the <label key-'asd'> to a given <input namne='asd'>
   if (elt.parentElement.nodeName == 'DD') {
     pii_lbls.push(elt.parentElement.previousElementSibling.innerText)
     return
@@ -75,40 +77,22 @@ function get_pii_lbls() {
   contentlog('Getting all PII labels');
   const elts = document.getElementsByTagName(tag);
   for (var e of elts) {
-    lblscanner(e)
+    labelscanner(e)
   }
   contentlog('Found ' + pii_lbls);
   return pii_lbls
-}
-
-function extract_inputs() {
-  inputs = document.getElementsByTagName('input');
-  var attributes = ["aria-label", "placeholder"]
-  var collection = []
-  for (i = 0; i < inputs.length; ++i) {
-    console.log(inputs[i])
-    for (j = 0; j < attributes.length; ++j) {
-      if (inputs[i].getAttribute(attributes[j]) != null) {
-        collection.push(inputs[i].getAttribute(attributes[j]))
-      }
-    }
-  }
-  collection.push('end')
-  alert(JSON.stringify(collection))
-  return collection
 }
 
 chrome.runtime.onMessage.addListener(function (message, sender, sendResponse) {
   switch (message.type) {
     case 'fillForm':
       contentlog('fillForm')
-      var fillers = load();
+      load_data_and_fill_form();
       contentlog('asd' + fillers)
       //fillForm(JSON.stringify(fillers, null, 2));
       break;
     case 'headers':
       sendResponse('dummy');
-      //const h1s = get_first('h1');
       const pii_lbls = get_pii_lbls()
       contentlog('Listener got ' + pii_lbls + ' sending to storage now')
       store(pii_lbls)

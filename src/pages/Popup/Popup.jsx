@@ -3,43 +3,22 @@ import logo from '../../assets/img/logo.svg';
 import Greetings from '../../containers/Greetings/Greetings';
 import './Popup.css';
 import { useEffect, useState } from 'react';
-
 import ReactDOM from 'react-dom';
-
-
-function popuplog(s) {
-  console.log('[popup]: ' + s)
-}
-
-
-
-popuplog('This is the popup page.')
-
-const fakeData1 = {
-  firstname: 'matt',
-  lastname: 'k',
-  reg_email__: 'asf@gmail.com',
-  reg_passwd__: 'asdfasdf',
-  sex: 'true'
-};
 
 var boxes = [];
 
+//TODO URL
+// Get current tabs URL and put in global variable
+// s.t. we can use it as storage key and don't have to get it multiple times
+// IDEAD:  Get URL before and after submit and store both
+
+// TODO PERSISTENT STORAGE 1
+// Overthink this initialization... is it necessary?
+// If we cannot avoid it, get document.URL from conntent somehow
+// Tipp: Use "send2content"
 chrome.storage.sync.set({ key: boxes }, function () {
   popuplog('Value is set to ' + boxes);
 });
-
-function store(findings) {
-  chrome.storage.sync.set({ pii: findings }, function () {
-    contentlog('Storing ' + findings);
-  });
-}
-
-//chrome.storage.sync.get(['key'], function (result) {
-//  popuplog('Value currently is ' + result.key);
-//  boxes = result.key;
-//  popuplog('Boxes currently is ' + result.key);
-//});
 
 chrome.storage.onChanged.addListener(function (changes, namespace) {
   var u = []
@@ -57,10 +36,25 @@ chrome.storage.onChanged.addListener(function (changes, namespace) {
       else {
         u.push(newValue)
       }
-      update(u)
+      rerender(u)
     }
   }
 });
+
+popuplog('This is the popup page.')
+
+function popuplog(s) {
+  console.log('[popup]: ' + s)
+}
+
+function store(findings) {
+  // TODO PERSISTANT STORAGE
+  // Research API that persists data throughout opening/closing tabs, and even restarting chrome
+  // Must also change how data is LOADED in content.jsx
+  chrome.storage.sync.set({ pii: findings }, function () {
+    contentlog('Storing ' + findings);
+  });
+}
 
 function send2background(s, d) {
   try {
@@ -133,38 +127,14 @@ async function db_json_req(pii) {
   store(r)
 }
 
-function db_request(pii) {
-  popuplog('Requesting ' + pii + 'from DB')
-  let response = fetch('http://blue1.cs.columbia.edu:5000/display')
-    .then(response => response.text())
-    .then(data => console.log(data));
-  popuplog('DB responded: ' + response)
-  var test = {};
-  for (let i of pii) {
-    if (i.includes('First')) {
-      test[i] = 'John'
-    }
-    if (i.includes('Last')) {
-      test[i] = 'Doe'
-    }
-    if (i.includes('mail')) {
-      test[i] = 'foo@bar.cc'
-    }
-    if (i.includes('word')) {
-      test[i] = 'test123'
-    }
-  }
-  return test;
-}
-
-function requestDecoy() {
-  const pii_rqst = getCheckedBoxes()
+function request_decoy() {
+  const pii_rqst = get_checked_boxes()
   const decoy = db_json_req(pii_rqst)
   popuplog('lets render server resp')
   render_pii_response(decoy)
 }
 
-function getCheckedBoxes() {
+function get_checked_boxes() {
   //var checkboxes = document.getElementsByTagName('input');
   //var checkboxesChecked = [];
   // loop over them all
@@ -194,7 +164,6 @@ function getCheckedBoxes() {
   return checkboxesChecked.length > 0 ? checkboxesChecked : null;
 }
 
-
 function render_pii_response(vals) {
   popuplog('rendering PII response: ' + Array.from(vals))
   const element =
@@ -209,14 +178,14 @@ function render_pii_response(vals) {
           </div>
         ))}
         <button onClick={() => send2content('headers')} key='headers'>Extract Labels</button>
-        <button onClick={requestDecoy} key='requestDecoy'>Request Decoy</button>
+        <button onClick={request_decoy} key='request_decoy'>Request Decoy</button>
         <button onClick={() => send2content('fillForm')} key='fillForm'>Stuff it!</button>
       </header >
     </div >
   ReactDOM.render(element, document.getElementById('app-container'));
 }
 
-function update(vals) {
+function rerender(vals) {
   popuplog('updating canvas to: ' + vals)
   const element =
     <div className="App">
@@ -230,30 +199,18 @@ function update(vals) {
           </div>
         ))}
         <button onClick={() => send2content('headers')} key='headers'>Extract Labels</button>
-        <button onClick={requestDecoy} key='requestDecoy'>Request Decoy</button>
+        <button onClick={request_decoy} key='request_decoy'>Request Decoy</button>
         <button onClick={() => send2content('fillForm')} key='fillForm'>Stuff it!</button>
       </header >
     </div >
   ReactDOM.render(element, document.getElementById('app-container'));
 }
 
-
+// TODO WORKFLOW
+// On Extract Labels, IF pii for this site alredy in storage, THEN jump to Request  Decoy and offer Stuff It
+// Tricky becasue rn popup reacts to onChangeListener, but what if no change event is triggered because data already exists?
+// Solution: dont call send2content directly, call a wrapper that checks the storage and handles the situation
 const Popup = () => {
-
-  //const [fakeData, setFakeData] = useState();
-
-  //useEffect(() => {
-  //  setFakeData(fakeData1)
-  //}, []);
-
-
-  //chrome.storage.onChanged.addListener(function (changes, namespace) {
-  //  let key = Object.entries(changes)
-  //  console.log(
-  //    `LOCAL  Storage key "${key}" in namespace "${namespace}" changed.`
-  //  );
-  //  update()//
-  //});
 
   function hello() {
     const element =
@@ -276,7 +233,7 @@ const Popup = () => {
         )
         }
         <button onClick={() => send2content('headers')} key='headers'>Extract Labels</button>
-        <button onClick={requestDecoy} key='requestDecoy'>Request Decoy</button>
+        <button onClick={request_decoy} key='request_decoy'>Request Decoy</button>
         <button onClick={() => send2content('fillForm')} key='fillForm'>Stuff it!</button>
       </header >
     </div >
